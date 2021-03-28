@@ -14,7 +14,7 @@ In general, any supporting SSH.
 Created and tested in Python 3.7 - 3.9
 
 ### Used libraries
-Watch requirements.txt
+Watch [requirements.txt](requirements.txt)
 
 ## Usage
 1. Install the modules from `requirements.txt` using `pip`.
@@ -26,6 +26,9 @@ Watch requirements.txt
 [By using this product you accept the license agreement](LICENSE)
 
 ## Dev Log
+Release `0.2.1`:
+- Changed name of the `main.py`.
+
 Release `0.2.0`:
 - Adding info polling from netbox regarding the management IPs
 
