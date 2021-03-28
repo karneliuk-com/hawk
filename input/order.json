@@ -1,0 +1,3 @@
+{
+    "bgp": "net show bgp ipv4 unicast summary json"
+}

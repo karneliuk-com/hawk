@@ -1,0 +1,6 @@
+---
+- hostname: CNL92-F10-LON2-UK
+  nos: cumulus
+#- hostname: PVL25-212-FRA2-DE
+#  nos: cumulus
+...

@@ -1,0 +1,22 @@
+<html>
+<style>
+h1 {font-family: Helvetica, Arial, sans-serif; font-size: 20px; margin-bottom: 2em;} 
+h2 {font-family: Helvetica, Arial, sans-serif; font-size: 17px; margin-bottom: 1em;} 
+h3 {font-family: Helvetica, Arial, sans-serif; font-size: 12px; margin-bottom: 1em;} 
+table {font-family: Helvetica, Arial, sans-serif; font-size: 12px; margin-bottom: 1em;}
+td {vertical-align: top;} 
+</style>
+<h1>Failure anaylis for {{ site }}</h1>
+<h3>Amount of failed nodes up to {{ failed_nodes }}</h3>
+<h3>Elapsed time: {{ elapsed_time }}</h3>
+<table style="width:800px">
+<tr><th>Failed Nodes</th><th>Connectivity Check</th><th>Broken connections</th></tr>
+{% for fn in results%}
+{%- if fn.connectivity_check %}
+<tr><td>{{ '<br>'.join(fn.failed_nodes) }}</td><td style="background-color:MediumSeaGreen;color:White;">PASS</td><td>-</td></tr>
+{%- else %}
+<tr><td>{{ '<br>'.join(fn.failed_nodes) }}</td><td style="background-color:Tomato;color:White;">FAIL</td><td>{% for bp in fn.broken_paths %}{{ bp[0] }}, {{ bp[1] }}<br>{% endfor %}</td></tr>
+{%- endif %}
+{%- endfor %}
+</table>
+</html>
