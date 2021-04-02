@@ -22,10 +22,18 @@ class AsnycPoller(object):
         tasks = []
 
         # Chossing instructions based on clarification
-        cleared_commands = [cv for ck, cv in commands.items() if ck == clarification]
+        cleared_commands = {}
 
-        for inv_entry in self.__targets: 
-            tasks.append(self.__singleShot(inv_entry, cleared_commands))
+        for inv_entry in self.__targets:
+            if (inv_entry["platform"] and "slug" in inv_entry["platform"]) and inv_entry["platform"]["slug"] not in cleared_commands:
+                cleared_commands[inv_entry["platform"]["slug"]] = []
+                cleared_commands[inv_entry["platform"]["slug"]] = [cv for ck, cv in commands[inv_entry["platform"]["slug"]].items() if ck == clarification]
+
+            if (inv_entry["platform"] and "slug" in inv_entry["platform"]) and inv_entry["platform"]["slug"] in cleared_commands:
+                tasks.append(self.__singleShot(inv_entry, cleared_commands[inv_entry["platform"]["slug"]]))
+
+            else:
+                logging.warning(f"There is no commands for {inv_entry['name']}.")
 
         output = await asyncio.gather(*tasks, return_exceptions=True)
 

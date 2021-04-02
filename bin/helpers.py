@@ -8,27 +8,77 @@ from getpass import getpass
 import yaml
 import json
 import argparse
+import os
+
 
 # User-defined function
-def get_creds(input_type):
+def get_creds(config: dict = {}):
     """
     This function collects the credentails to connect to the network elements.
-    Input: source of collection: 'cli', 'file', or 'api' 
+    Input: source of collection: 'cli', 'file', 'env', or 'any'. 
     """
     logging.info('Collecting credentials...')
-    result ={}
 
-    if input_type == 'cli':
+    allowed_cred_types = {"any", "cli", "env", "file"}
+    result = {}
+    creds_set = False
+
+    config["credentials"]["type"] = config["credentials"]["type"] if config["credentials"]["type"] in allowed_cred_types else "any"
+
+    # Checking environmnt variables
+    if config["credentials"]["type"] == "any" or "env":
+        try:
+            env_vars = os.environ
+
+            result['user'] = env_vars["HAWK_USER"]
+            result['pass'] = env_vars["HAWK_PASS"]
+
+            if config["inventory"]["type"] == "netbox":
+                result['nb_token'] = env_vars["NB_TOKEN"]
+            
+            creds_set = True
+
+            logging.info("Credentials picked up from the environment.")
+
+        except KeyError:
+            logging.info("Credentials CANNOT be set from environment.")
+
+    # Checking file settings
+    if config["credentials"]["type"] == "file" or (config["credentials"]["type"] == "any" and not creds_set):
+        try:
+            if config["inventory"]["type"] == "netbox":
+                result['nb_token'] = config["inventory"]["parameters"]["token"]
+
+            else:
+                inv = get_data(config["inventory"]["parameters"]["path"])
+
+                for entry in inv:
+                    result["user"] = entry["username"]
+                    result["pass"] = entry["password"]
+
+                creds_set = True
+
+            result["user"] = None
+            result["pass"] = None
+
+            logging.info("Credentials picked up from the files.")
+
+        except KeyError:
+            logging.info("Credentials CANNOT be set from files.")        
+    
+    # Collecting CLI settings
+    if config["credentials"]["type"] == 'cli' or (config["credentials"]["type"] == "any" and not creds_set):
         print('Please, provide the credentials for the network functions and NetBox token: ')
         result['user'] = str(input('Username > '))
         result['pass'] = getpass('Password > ')
-        result['nb_token'] = getpass('NetBox Token > ')
+        
+        result['nb_token'] = getpass('NetBox Token > ') if not 'nb_token' in result else result['nb_token']
 
     logging.info('Credentials are collected.')
     return result
 
 
-def get_data(file_path):
+def get_data(file_path: str):
     """
     This function opens the external file in JSON or YAML format and imports the data as dictionary.
     Input: path to the file with the format YAML or JSON.
@@ -53,15 +103,17 @@ def get_data(file_path):
 def get_args():
     # Default ranges
     allowed_operations = {"draw", "analyze"}
-    allowed_topology = {"bgp", "lldp", "bfd"}
+    allowed_topology = {"bgp-ipv4", "bgp-ipv6", "bgp-evpn" "lldp", "bfd"}
 
     parser = argparse.ArgumentParser(prog='OpenConfig Network Topology Grapher', description="This tool is polling the info from devices using gNMI using OpenConfig YANG modules and builds topologies.")
     parser.add_argument('-s', '--save', dest="save", default=False, action='store_true', help="Cache the collected information.")
     parser.add_argument('-l', '--local', dest="local", default=False, action='store_true', help="Use locally stored cache")
-    parser.add_argument('-d', '--datacentre', dest="datacentre", default="dc5-lab", help="Choose data centre")
+    parser.add_argument('-d', '--datacentre', dest="datacentre", default="nrn", help="Choose data centre")
     parser.add_argument('-f', '--failed_nodes', dest="failed_nodes", default=1, type=int, help="Number of failed nodes")
+    parser.add_argument('-ft', '--failed_node_type', dest="failed_node_type", default="spine", help="Number of failed nodes")
+    parser.add_argument('-fn', '--failed_node_name', dest="failed_node_name", default="", help="Number of failed nodes")
     parser.add_argument('-o', '--operation', dest="operation", default="draw", help=f"Provide operation type. Allowed: {', '.join(allowed_operations)}")
-    parser.add_argument('-t', '--topology', dest="topology", default="bgp", help=f"Provide topology type. Allowed: {', '.join(allowed_topology)}")
+    parser.add_argument('-t', '--topology', dest="topology", default="bgp-ipv4", help=f"Provide topology type. Allowed: {', '.join(allowed_topology)}")
 
     result = parser.parse_args()
 
@@ -85,5 +137,61 @@ def get_inventory(path: str):
 
     with open(path, "r") as f:
         result = yaml.load(f.read(), Loader=yaml.FullLoader)
+
+    return result
+
+
+def initialization(file_path: str):
+    logging.info("Initializing the HAWK...")
+    result = {}
+
+    try:
+        result = get_data(file_path)
+        logging.info(f"Initialization is successful from the configuration file '{file_path}'.")
+
+    except FileNotFoundError:
+        logging.info("Configuration file is not found, using the default parameters.")
+
+        result = {
+            'inventory': {
+                'type': 'local', 
+                'parameters': {
+                    'path': './inventory/inventory.yaml'
+                }
+            }, 
+            'logging': {
+                'enabled': True, 
+                'parameters': {
+                    'path': './log/execution.log'
+                }
+            }, 
+            'output': {
+                'type': 'local', 
+                'parameters': {
+                    'path': './output'
+                }
+            }, 
+            'cache': {
+                'enabled': True, 
+                'parameters': {
+                    'path': './.cache/raw_results.json'
+                }
+            }, 
+            'templates': {
+                'parameters': {
+                    'path': './templates'
+                }
+            },
+            'credentials': {
+                'type': 'any'
+            },
+            'mapping': {
+                'data_centre': {'leaf': ['leaf'], 'spine': ['spine'], 'border': ['border'], 'aggregate': ['aggregate'], 'dci': ['dci-gw']}, 
+                'service_provider': None, 
+                'enterprise': None
+            }
+        }
+        
+        logging.info("Initialization is successful with default variables.")
 
     return result

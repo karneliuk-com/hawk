@@ -7,3 +7,4 @@ networkx
 pyvis
 colorama
 jinja2
+pygnmi

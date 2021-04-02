@@ -1,0 +1,59 @@
+---
+# Inventory details for HAWK
+inventory:
+#  type: local
+#  parameters:
+#    path: ./inventory/default/inventory.yaml
+  type: netbox
+  parameters:
+    url: http://192.168.1.70:8000
+    token: 0123456789abcdef0123456789abcdef01234567
+    site: nrn
+
+# Logging details for HAWK
+logging:
+  enabled: True
+  parameters:
+    path: ./log/execution.log
+
+# Output details for HAWK
+output:
+  type: local
+  parameters:
+    path: ./output
+
+# Cache details for HAWK
+cache:
+  enabled: True
+  parameters:
+    path: ./.cache/raw_results.json
+
+# Templates for HAWK
+templates:
+  parameters:
+    path: ./templates
+
+# Credentials type
+credentials:
+  type: any
+
+# Device mapping table for builder
+mapping:
+  data_centre:
+    leaf: 
+      - leaf
+    spine:
+      - spine
+    border:
+      - border
+    aggregate:
+      - aggregate
+    dci:
+      - dci-gw
+  service_provider:
+  enterprise:
+
+# Command data
+commands:
+  path: ./bin/orders/all.json
+...

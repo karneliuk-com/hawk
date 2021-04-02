@@ -21,7 +21,7 @@ def get_plane(hn: str):
     return hn
 
 
-def analyze_bgp(cd: dict, site: str):
+def analyze_bgp(cd: dict, inv: dict, mapping: dict, site: str):
     """
     Bulding the Network Graph out of the BGP outputs
     """
@@ -32,22 +32,24 @@ def analyze_bgp(cd: dict, site: str):
         bgp_poll = dev[0]
 
         # Putting device roles based on hostname
-        if re.match("^CNL.*", bgp_poll["hostname"]) or re.match("^PBL.*", bgp_poll["hostname"]) or re.match("^PVL.*", bgp_poll["hostname"]):
-            level = 1
-            plane = None
-            role = "leaf"
-        elif re.match("^CNS.*", bgp_poll["hostname"]) or re.match("^PBS.*", bgp_poll["hostname"]) or re.match("^PVS.*", bgp_poll["hostname"]):
-            level = 3
-            plane = get_plane(bgp_poll["hostname"])
-            role = "spine"
-        elif re.match("^CNE.*", bgp_poll["hostname"]) or re.match("^PBE.*", bgp_poll["hostname"]) or re.match("^PVE.*", bgp_poll["hostname"]):
-            level = 5
-            plane = None
-            role = "exit"
-        elif re.match("^CNX.*", bgp_poll["hostname"]) or re.match("^PBX.*", bgp_poll["hostname"]) or re.match("^PVX.*", bgp_poll["hostname"]):
-            level = 4
-            plane = None
-            role = "super-spine"
+        for de in inv:
+            if bgp_poll["hostname"] == de["name"]:
+                if de["device_role"]["slug"] in mapping["data_centre"]["leaf"]:
+                    level = 1
+                    plane = None
+                    role = "leaf"   
+                elif de["device_role"]["slug"] in mapping["data_centre"]["spine"]:
+                    level = 3
+                    plane = get_plane(bgp_poll["hostname"])
+                    role = "spine"
+                elif de["device_role"]["slug"] in mapping["data_centre"]["border"]:
+                    level = 5
+                    plane = None
+                    role = "border"
+                elif de["device_role"]["slug"] in mapping["data_centre"]["border"]:
+                    level = 4
+                    plane = None
+                    role = "aggregate"
 
         # Adding nodes to graph
         if "as" in bgp_poll["results"]:
@@ -100,10 +102,11 @@ def bgp_failure_analysis(G, po: str, pd: str, failed_nodes: int = 1):
     G1 = deepcopy(G)
 
     # Printing the summary information
+    tl = os.get_terminal_size()
     print(Style.RESET_ALL)
-    print("=" * 60)
+    print("=" * tl[0])
     print("Running the failure analysis for:    " + Fore.CYAN + G.graph["site"] + Fore.RESET)
-    print("Amount of failed nodes up to:        " + Fore.RED + str(failed_nodes) + Fore.RESET + "\n" + "-" * 60)
+    print("Amount of failed nodes up to:        " + Fore.RED + str(failed_nodes) + Fore.RESET + "\n" + "-" * tl[0])
 
     # Running analysis
     t1 = datetime.datetime.now()
@@ -111,19 +114,19 @@ def bgp_failure_analysis(G, po: str, pd: str, failed_nodes: int = 1):
     t2 = datetime.datetime.now()
 
     # Printing results
-    print("Results:" + "\n" + "-" * 60)
+    print("Results:" + "\n" + "-" * tl[0])
     
     for result_entry in connectivity_results:
         failed_nodes_string = ', '.join(result_entry['failed_nodes']) if result_entry['failed_nodes'] else 'NONE'
         print(f"Failed nodes:                        {failed_nodes_string}")
 
         if result_entry["connectivity_check"]:
-            print(f"Connectivity check:                  " + Fore.GREEN + "PASS" + Fore.RESET + "\n" + "-" * 60)
+            print(f"Connectivity check:                  " + Fore.GREEN + "PASS" + Fore.RESET + "\n" + "-" * tl[0])
         else:
-            print(f"Connectivity check:                  " + Fore.RED + "FAIL" + Fore.RESET + "\n" + "-" * 60)
+            print(f"Connectivity check:                  " + Fore.RED + "FAIL" + Fore.RESET + "\n" + "-" * tl[0])
 
-    print("Elapsed time:                        " + Fore.CYAN + f"{t2 - t1}" + Fore.RESET + "\n" + "-" * 60)
-    print("=" * 60)
+    print("Elapsed time:                        " + Fore.CYAN + f"{t2 - t1}" + Fore.RESET + "\n" + "-" * tl[0])
+    print("=" * tl[0])
     print(Style.RESET_ALL)
 
     # Generating detailed reports
