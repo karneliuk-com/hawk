@@ -44,8 +44,11 @@ Watch [requirements.txt](requirements.txt)
 [By using this product you accept the license agreement](LICENSE)
 
 ## Dev Log
+Release `0.3.0`:
+- First public release.
+
 Release `0.2.1`:
-- A lot of rework to generalise tool
+- A lot of rework to generalise the tool.
 
 Release `0.2.1`:
 - Changed name of the `main.py`.

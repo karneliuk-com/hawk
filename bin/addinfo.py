@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#(c)2021, Karneliuk.com
 
 # Modules
 import logging

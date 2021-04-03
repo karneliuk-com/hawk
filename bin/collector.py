@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#(c)2021, Karneliuk.com
 
 # Modules
 import asyncio
@@ -27,7 +28,7 @@ class AsnycPoller(object):
         for inv_entry in self.__targets:
             if (inv_entry["platform"] and "slug" in inv_entry["platform"]) and inv_entry["platform"]["slug"] not in cleared_commands:
                 cleared_commands[inv_entry["platform"]["slug"]] = []
-                cleared_commands[inv_entry["platform"]["slug"]] = [cv for ck, cv in commands[inv_entry["platform"]["slug"]].items() if ck == clarification]
+                cleared_commands[inv_entry["platform"]["slug"]] = [(ck, cv) for ck, cv in commands[inv_entry["platform"]["slug"]].items() if ck in [clarification, "interfaces"]]
 
             if (inv_entry["platform"] and "slug" in inv_entry["platform"]) and inv_entry["platform"]["slug"] in cleared_commands:
                 tasks.append(self.__singleShot(inv_entry, cleared_commands[inv_entry["platform"]["slug"]]))
@@ -51,10 +52,10 @@ class AsnycPoller(object):
             async with asyncssh.connect(host['primary_ip']['address'].split('/')[0], username=self.__creds['user'], password=self.__creds['pass'],
                                         known_hosts=None) as conn:
                 for ce in commands:
-                    result = await conn.run(ce, check=True)
+                    result = await conn.run(ce[1], check=True)
                     sr = {}
                     sr.update({'hostname': host['name']})
-                    sr.update({'command': ce})
+                    sr.update({'collection': ce[0]})
                     sr.update({'results': json.loads(result.stdout)})
                     results.append(sr)
 

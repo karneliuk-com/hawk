@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#(c)2021, Karneliuk.com
 
 # Modules
 import logging
@@ -104,14 +105,15 @@ def get_args():
     # Default ranges
     allowed_operations = {"draw", "analyze"}
     allowed_topology = {"bgp-ipv4", "bgp-ipv6", "bgp-evpn" "lldp", "bfd"}
+    allowed_node_types = {"leaf", "spine", "border", "aggregate"}
 
     parser = argparse.ArgumentParser(prog='OpenConfig Network Topology Grapher', description="This tool is polling the info from devices using gNMI using OpenConfig YANG modules and builds topologies.")
     parser.add_argument('-s', '--save', dest="save", default=False, action='store_true', help="Cache the collected information.")
     parser.add_argument('-l', '--local', dest="local", default=False, action='store_true', help="Use locally stored cache")
     parser.add_argument('-d', '--datacentre', dest="datacentre", default="nrn", help="Choose data centre")
     parser.add_argument('-f', '--failed_nodes', dest="failed_nodes", default=1, type=int, help="Number of failed nodes")
-    parser.add_argument('-ft', '--failed_node_type', dest="failed_node_type", default="spine", help="Number of failed nodes")
-    parser.add_argument('-fn', '--failed_node_name', dest="failed_node_name", default="", help="Number of failed nodes")
+    parser.add_argument('-ft', '--failed_node_types', dest="failed_node_types", default="spine,aggregate", help=f"Type of the failed nodes to analyse. Allowed: {', '.join(allowed_node_types)}")
+    parser.add_argument('-fn', '--failed_node_names', dest="failed_node_names", default="", help="Number of failed nodes")
     parser.add_argument('-o', '--operation', dest="operation", default="draw", help=f"Provide operation type. Allowed: {', '.join(allowed_operations)}")
     parser.add_argument('-t', '--topology', dest="topology", default="bgp-ipv4", help=f"Provide topology type. Allowed: {', '.join(allowed_topology)}")
 
@@ -123,6 +125,16 @@ def get_args():
         if op not in allowed_operations:
             logging.error(f"Not supported operation type: {result.operation}")
             sys.exit(f"Not supported operation type: {result.operation}")
+
+    # Validating the failed node types
+    result.failed_node_types = set(result.failed_node_types.split(","))
+    for op in result.failed_node_types:
+        if op not in allowed_node_types:
+            logging.error(f"Not supported node type: {result.failed_node_types}")
+            sys.exit(f"Not supported node type: {result.failed_node_types}")
+
+    # Validating the specific failed nodes
+    result.failed_node_names = set(result.failed_node_names.split(",")) if result.failed_node_names  else {}
 
     # Valdifating the topology type
     if result.topology not in allowed_topology:

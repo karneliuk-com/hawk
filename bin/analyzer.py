@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#(c)2021, Karneliuk.com
 
 # Modules
 import networkx
@@ -9,6 +10,8 @@ from copy import deepcopy
 import datetime
 from colorama import Fore, Back, Style
 import jinja2
+import logging
+import sys
 
 
 # User-defiend function
@@ -29,7 +32,27 @@ def analyze_bgp(cd: dict, inv: dict, mapping: dict, site: str):
 
     # Building network graph
     for dev in cd:
-        bgp_poll = dev[0]
+        # Putting the default vars
+        bgp_poll = None
+        int_poll = None
+
+        # Picking the variables
+        for e in dev:
+            if re.match("^bgp-.*", e["collection"]):
+                bgp_poll = e 
+
+            if e["collection"] == "interfaces":
+                int_poll = e
+
+        if not bgp_poll and not int_poll:
+            logging.error("Some vars are missing.")
+            sys.exit(1)
+
+        # Generating list of IP address as device attributes
+        ip_addresses = []
+        for int_name, int_dets in int_poll["results"].items():
+            if "iface_obj" in int_dets and "ip_address" in int_dets["iface_obj"] and "allentries" in int_dets["iface_obj"]["ip_address"]:
+                ip_addresses.extend([ip_a.split("/")[0] for ip_a in int_dets["iface_obj"]["ip_address"]["allentries"] if not re.match("^127\..+", ip_a) and ip_a != "::1/128"])
 
         # Putting device roles based on hostname
         for de in inv:
@@ -55,20 +78,32 @@ def analyze_bgp(cd: dict, inv: dict, mapping: dict, site: str):
         if "as" in bgp_poll["results"]:
             G.add_node(bgp_poll["hostname"], label=bgp_poll["hostname"], bgp_asn=bgp_poll["results"]["as"], 
                        title=f"{bgp_poll['hostname']}<br>ASN: {bgp_poll['results']['as']}<br>Plane: {plane}<br>Role: {role}", 
-                       level=level, plane = plane, role=role)
+                       level=level, plane = plane, role=role, ip_addresses=ip_addresses)
 
     # Continuing building network graph 
     for dev in cd:
-        if dev[0]["hostname"] in G.nodes:
-            if re.match("^CNS.*", dev[0]["hostname"]) or re.match("^PBS.*", dev[0]["hostname"]) or re.match("^PVS.*", dev[0]["hostname"]):
-                for peer_if, peer_detail in dev[0]["results"]["peers"].items():
-                    if G.nodes[dev[0]["hostname"]]["plane"] == 1:
+        # Putting the default vars
+        bgp_poll = None
+
+        # Picking the variables
+        for e in dev:
+            if re.match("^bgp-.*", e["collection"]):
+                bgp_poll = e 
+
+        if not bgp_poll:
+            logging.error("Some vars 'bgp_poll' are missing.")
+            sys.exit(1)
+
+        if bgp_poll["hostname"] in G.nodes:
+            if G.nodes[bgp_poll["hostname"]]["role"] == "spine":
+                for peer_if, peer_detail in bgp_poll["results"]["peers"].items():
+                    if G.nodes[bgp_poll["hostname"]]["plane"] == 1:
                         color = "blue"
-                    elif G.nodes[dev[0]["hostname"]]["plane"] == 2:
+                    elif G.nodes[bgp_poll["hostname"]]["plane"] == 2:
                         color = "green"
-                    elif G.nodes[dev[0]["hostname"]]["plane"] == 3:
+                    elif G.nodes[bgp_poll["hostname"]]["plane"] == 3:
                         color = "purple"
-                    elif G.nodes[dev[0]["hostname"]]["plane"] == 4:
+                    elif G.nodes[bgp_poll["hostname"]]["plane"] == 4:
                         color = "brown"
 
                     # Adding edges to graph
@@ -76,8 +111,16 @@ def analyze_bgp(cd: dict, inv: dict, mapping: dict, site: str):
                         if peer_detail["state"] != "Established":
                             color= "red"
 
-                        if dev[0]["hostname"] in G.nodes and peer_detail["hostname"] in G.nodes:
-                            G.add_edge(dev[0]["hostname"], peer_detail["hostname"], label=peer_detail["state"], color=color)
+                        # Working with interface peering
+                        if re.match("^swp.+", peer_if):
+                            if bgp_poll["hostname"] in G.nodes and peer_detail["hostname"] in G.nodes:
+                                G.add_edge(bgp_poll["hostname"], peer_detail["hostname"], label=peer_detail["state"], color=color)
+
+                        # Working with IP address peering
+                        else:
+                            for peer in G.nodes.data():
+                                if peer_if in peer[1]["ip_addresses"]:
+                                    G.add_edge(bgp_poll["hostname"], peer[0], label=peer_detail["state"], color=color)
 
     return G
 
@@ -86,19 +129,18 @@ def draw_bgp(G, po: str, site: str):
     """
     Visualising the BGP topology
     """
-    nt = Network(height="600px", width="1200px", heading=G.graph["label"], layout=True)
+    nt = Network(height="600px", width="1200px", heading=f"{G.graph['label']}, (c)2021, Karneliuk.com", layout=True)
     nt.from_nx(G)
     nt.toggle_physics(False)
 
     nt.show(f"{po}/bgp_topology_{site}.html")
 
 
-def bgp_failure_analysis(G, po: str, pd: str, failed_nodes: int = 1):
+def bgp_failure_analysis(G, po: str, pd: str, failed_nodes: int = 1, failed_node_types: set = {"spine", "aggregate"}, failed_node_names: set = {}):
     """
     High-function to trigger the node analyses from the BGP perspective
     """
     # Setting nodes to check
-    transit_nodes = {"spine", "super-spine"}
     G1 = deepcopy(G)
 
     # Printing the summary information
@@ -106,11 +148,14 @@ def bgp_failure_analysis(G, po: str, pd: str, failed_nodes: int = 1):
     print(Style.RESET_ALL)
     print("=" * tl[0])
     print("Running the failure analysis for:    " + Fore.CYAN + G.graph["site"] + Fore.RESET)
+
+    failed_nodes = failed_nodes if not failed_node_names else len(failed_node_names)
     print("Amount of failed nodes up to:        " + Fore.RED + str(failed_nodes) + Fore.RESET + "\n" + "-" * tl[0])
 
     # Running analysis
     t1 = datetime.datetime.now()
-    connectivity_results = _node_failure_analysis(G1, levels=failed_nodes, failing_nodes=transit_nodes)
+    connectivity_results = _node_failure_analysis(G1, levels=failed_nodes, failing_nodes=failed_node_types,
+                                                  specific_failed_nodes=failed_node_names)
     t2 = datetime.datetime.now()
 
     # Printing results
@@ -137,7 +182,7 @@ def bgp_failure_analysis(G, po: str, pd: str, failed_nodes: int = 1):
         f.write(template.render(site=G.graph['site'], elapsed_time=f"{t2 - t1}", results=connectivity_results, failed_nodes=failed_nodes))
 
 
-def _node_failure_analysis(G, levels: int = 1, failing_nodes: set = {"spine", "super-spine"}, checked_node: str = "", upper_checked_nodes: list = []):
+def _node_failure_analysis(G, levels: int = 1, failing_nodes: set = {"spine", "aggregate"}, specific_failed_nodes: set = {}, checked_node: str = "", upper_checked_nodes: list = []):
     """
     Recursive function to analyse the impact of outage on the connectivity between the edges
     """
@@ -149,7 +194,7 @@ def _node_failure_analysis(G, levels: int = 1, failing_nodes: set = {"spine", "s
         levels -= 1
 
         for n1 in G.nodes.data():
-            if n1[1]["role"] in failing_nodes and n1[0] not in checked_nodes and n1[0] != checked_node:
+            if ((n1[1]["role"] in failing_nodes and not specific_failed_nodes) or n1[0] in specific_failed_nodes) and n1[0] not in checked_nodes and n1[0] != checked_node:
                 # Creating temp data structures
                 checked_nodes.append(n1[0])
                 edge_params = []
@@ -168,7 +213,7 @@ def _node_failure_analysis(G, levels: int = 1, failing_nodes: set = {"spine", "s
 
                 # Running nested check (recursion)
                 if levels:
-                    nested_results = _node_failure_analysis(G, levels, failing_nodes, n1[0], checked_nodes)
+                    nested_results = _node_failure_analysis(G, levels, failing_nodes, specific_failed_nodes, n1[0], checked_nodes)
 
                     upper_result = result[0]
 
@@ -208,7 +253,7 @@ def _connectivity_check(G):
                 spf_check = None
 
 
-                if n2[1]["role"] in {"leaf", "exit"} and n1[0] != n2[0] and (n2[0], n1[0]) not in connectivity_matrix["not-ok"]:
+                if n2[1]["role"] in {"leaf", "border"} and n1[0] != n2[0] and (n2[0], n1[0]) not in connectivity_matrix["not-ok"]:
                     try:
                         spf_check = networkx.shortest_path(G, source=n1[0], target=n2[0])
 

@@ -1,8 +1,5 @@
 #!/usr/bin/env python
-
-# Version
-__version__ = '0.2.0'
-
+#(c)2021, Karneliuk.com
 
 # Modules
 import asyncio
@@ -79,11 +76,15 @@ if __name__ == '__main__':
             with open(config["cache"]["parameters"]["path"], 'w') as f:
                 f.write(json.dumps(collected_data, sort_keys=True, indent=4))
 
+            with open(config["cache"]["parameters"]["path2"], 'w') as f:
+                f.write(json.dumps(inventory, sort_keys=True, indent=4))
+
             logging.info(f'File {config["cache"]["parameters"]["path"]} is saved succesfully.')
 
     # Working with the local cache
     else:
         collected_data = json.loads(open(config["cache"]["parameters"]["path"], "r").read())
+        inventory = json.loads(open(config["cache"]["parameters"]["path2"], "r").read())
 
         logging.info(f'Vars are succesfully loaded from cache at {config["cache"]["parameters"]["path"]}.')
 
@@ -100,6 +101,7 @@ if __name__ == '__main__':
     if "analyze" in args.operation:
         # Analyzing BGP node failures
         if re.match("^bgp-.*", args.topology):
-            an.bgp_failure_analysis(network_graph, config["output"]["parameters"]["path"], config["templates"]["parameters"]["path"], args.failed_nodes)
+            an.bgp_failure_analysis(network_graph, config["output"]["parameters"]["path"], config["templates"]["parameters"]["path"], 
+                                    args.failed_nodes, args.failed_node_types, args.failed_node_names)
 
     logging.info('The execution is complete successfully')

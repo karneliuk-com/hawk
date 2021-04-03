@@ -27,6 +27,7 @@ cache:
   enabled: True
   parameters:
     path: ./.cache/raw_results.json
+    path2: ./.cache/inventory.json
 
 # Templates for HAWK
 templates:
