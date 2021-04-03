@@ -7,7 +7,7 @@ At the moment HAWK is being developed as a set of Python tools, which at some po
 
 | Tool name | File | Description |
 | :--- | :---: | :--- |
-| Analyzer | [topology_analyzer.py] (topology_analyzer.py) | Visualisation of the network topology (LLDP, BFD, BGP, ISIS) and what-if analysis of the node outage |
+| Analyzer | [topology_analyzer.py](topology_analyzer.py) | Visualisation of the network topology (LLDP, BFD, BGP, ISIS) and what-if analysis of the node outage |
 
 ## Management Interfaces
 The tools is constantly developing, so the changes may be frequent. At the current moment, the following interfaces are supported:
