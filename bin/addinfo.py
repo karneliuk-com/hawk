@@ -17,6 +17,7 @@ class Extender(object):
         self.__mapping = config["mapping"]
         self.__token = token
         self.__full = full
+        self.__ssh_timeout = config["ssh"]["timeout"]
 
         self.__ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         self.__ssl_context.check_hostname = False
@@ -33,7 +34,7 @@ class Extender(object):
         for k1, v1 in self.__mapping["data_centre"].items():
             roles_in_question.extend(v1)
 
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as self.__client_session:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.__ssh_timeout)) as self.__client_session:
             for role in roles_in_question:
                 tasks.append(asyncio.ensure_future(self.__single_request2(f"{self.__url}/api/dcim/devices/?site={site_slug}&role={role}")))
 
@@ -47,6 +48,7 @@ class Extender(object):
 
             for dev in inventory:
                 if not dev["primary_ip"]:
+                    # Pulling the management IP for Cumulus Linux if that is not set for device
                     if dev["platform"] and "slug" in dev["platform"] and dev["platform"]["slug"] == "cumulus-linux":
                         tasks.append(asyncio.ensure_future(self.__single_request2(f"{self.__url}/api/ipam/ip-addresses/?interface=eth0&device_id={dev['id']}")))
 

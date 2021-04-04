@@ -1,9 +1,6 @@
 ---
 # Inventory details for HAWK
 inventory:
-#  type: local
-#  parameters:
-#    path: ./inventory/default/inventory.yaml
   type: netbox
   parameters:
     url: http://192.168.1.70:8000
@@ -57,4 +54,8 @@ mapping:
 # Command data
 commands:
   path: ./bin/orders/all.json
+
+# SSH parameters
+ssh:
+  timeout: 20
 ...

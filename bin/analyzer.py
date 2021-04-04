@@ -69,7 +69,7 @@ def analyze_bgp(cd: dict, inv: dict, mapping: dict, site: str):
                     level = 5
                     plane = None
                     role = "border"
-                elif de["device_role"]["slug"] in mapping["data_centre"]["border"]:
+                elif de["device_role"]["slug"] in mapping["data_centre"]["aggregate"]:
                     level = 4
                     plane = None
                     role = "aggregate"

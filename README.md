@@ -44,6 +44,9 @@ Watch [requirements.txt](requirements.txt)
 [By using this product you accept the license agreement](LICENSE)
 
 ## Dev Log
+Release `0.3.1`:
+- Minor bug fixing.
+
 Release `0.3.0`:
 - First public release.
 
