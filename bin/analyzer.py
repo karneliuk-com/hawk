@@ -192,8 +192,10 @@ def bgp_failure_analysis(G, bll: list, po: str, pd: str, failed_nodes: int = 1, 
     with open(f"{pd}/bgp_nodes_failure.j2", "r") as f:
         template = jinja2.Template(f.read())
 
+    extra_info = f"Failed nodes are: {', '.join(failed_node_names)}" if failed_node_names else f"Failed nodes types are: {', '.join(failed_node_types)}"
+
     with open(f"{po}/bgp_nodes_failues_{G.graph['site']}.html", "w") as f:
-        f.write(template.render(site=G.graph['site'], elapsed_time=f"{t2 - t1}", results=connectivity_results, failed_nodes=failed_nodes))
+        f.write(template.render(site=G.graph['site'], elapsed_time=f"{t2 - t1}", results=connectivity_results, failed_nodes=failed_nodes, extra_info=extra_info))
 
 
 def _node_failure_analysis(G, levels: int = 1, failing_nodes: set = {"spine", "aggregate"}, specific_failed_nodes: set = {}, checked_node: str = "", upper_checked_nodes: list = []):
