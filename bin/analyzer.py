@@ -29,6 +29,7 @@ def analyze_bgp(cd: dict, inv: dict, mapping: dict, site: str):
     Bulding the Network Graph out of the BGP outputs
     """
     G = networkx.Graph(name=f"BGP topology for {site}", label=f"BGP topology for {site}", site=site)
+    broken_links = []
 
     # Building network graph
     for dev in cd:
@@ -106,15 +107,20 @@ def analyze_bgp(cd: dict, inv: dict, mapping: dict, site: str):
                     elif G.nodes[bgp_poll["hostname"]]["plane"] == 4:
                         color = "brown"
 
+                    # Finding bgp sessions down
+                    if peer_detail["state"] != "Established":
+                        color= "red"
+
                     # Adding edges to graph
                     if "hostname" in peer_detail:
-                        if peer_detail["state"] != "Established":
-                            color= "red"
-
                         # Working with interface peering
                         if re.match("^swp.+", peer_if):
                             if bgp_poll["hostname"] in G.nodes and peer_detail["hostname"] in G.nodes:
                                 G.add_edge(bgp_poll["hostname"], peer_detail["hostname"], label=peer_detail["state"], color=color)
+
+                                # Adding broken links to a separate list
+                                if peer_detail["state"] != "Established":
+                                    broken_links.append((bgp_poll["hostname"], peer_detail["hostname"]))
 
                         # Working with IP address peering
                         else:
@@ -122,7 +128,11 @@ def analyze_bgp(cd: dict, inv: dict, mapping: dict, site: str):
                                 if peer_if in peer[1]["ip_addresses"]:
                                     G.add_edge(bgp_poll["hostname"], peer[0], label=peer_detail["state"], color=color)
 
-    return G
+                                    # Adding broken links to a separate list
+                                    if peer_detail["state"] != "Established":
+                                        broken_links.append((bgp_poll["hostname"], peer[0]))
+
+    return G, broken_links
 
 
 def draw_bgp(G, po: str, site: str):
@@ -136,12 +146,16 @@ def draw_bgp(G, po: str, site: str):
     nt.show(f"{po}/bgp_topology_{site}.html")
 
 
-def bgp_failure_analysis(G, po: str, pd: str, failed_nodes: int = 1, failed_node_types: set = {"spine", "aggregate"}, failed_node_names: set = {}):
+def bgp_failure_analysis(G, bll: list, po: str, pd: str, failed_nodes: int = 1, failed_node_types: set = {"spine", "aggregate"}, failed_node_names: set = {}):
     """
     High-function to trigger the node analyses from the BGP perspective
     """
     # Setting nodes to check
     G1 = deepcopy(G)
+
+    # Removing broken links
+    for ble in bll:
+        G1.remove_edge(*ble)
 
     # Printing the summary information
     tl = os.get_terminal_size()

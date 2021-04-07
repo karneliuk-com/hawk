@@ -89,8 +89,8 @@ if __name__ == '__main__':
         logging.info(f'Vars are succesfully loaded from cache at {config["cache"]["parameters"]["path"]}.')
 
     # Working with Network Graph
-    network_graph = an.analyze_bgp(collected_data, inventory, config["mapping"], args.datacentre)
-
+    network_graph, broken_links_list = an.analyze_bgp(collected_data, inventory, config["mapping"], args.datacentre)
+    
     # Drawing topology
     if "draw" in args.operation:
         # Drawing BGP
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     if "analyze" in args.operation:
         # Analyzing BGP node failures
         if re.match("^bgp-.*", args.topology):
-            an.bgp_failure_analysis(network_graph, config["output"]["parameters"]["path"], config["templates"]["parameters"]["path"], 
+            an.bgp_failure_analysis(network_graph, broken_links_list, config["output"]["parameters"]["path"], config["templates"]["parameters"]["path"], 
                                     args.failed_nodes, args.failed_node_types, args.failed_node_names)
 
     logging.info('The execution is complete successfully')

@@ -44,6 +44,10 @@ Watch [requirements.txt](requirements.txt)
 [By using this product you accept the license agreement](LICENSE)
 
 ## Dev Log
+Release `0.3.2`:
+- Fixed logical error, where the non-established BGP session was pasing the the connectivity check.
+- Added functionality for validating the specific node failure.
+
 Release `0.3.1`:
 - Minor bug fixing.
 
