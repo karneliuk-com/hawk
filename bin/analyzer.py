@@ -33,79 +33,86 @@ def analyze_bgp(cd: dict, inv: dict, mapping: dict, site: str):
 
     # Building network graph
     for dev in cd:
-        # Putting the default vars
-        bgp_poll = None
-        int_poll = None
+        # Skipping elements, which don't have data
+        if dev:
+            # Putting the default vars
+            bgp_poll = None
+            int_poll = None
 
-        # Picking the variables
-        for e in dev:
-            if re.match("^bgp-.*", e["collection"]):
-                bgp_poll = e 
+            # Picking the variables
+            for e in dev:
+                if re.match("^bgp-.*", e["collection"]):
+                    bgp_poll = e 
 
-            if e["collection"] == "interfaces":
-                int_poll = e
+                if e["collection"] == "interfaces":
+                    int_poll = e
 
-        if not bgp_poll and not int_poll:
-            logging.error("Some vars are missing.")
-            sys.exit(1)
+            if not bgp_poll and not int_poll:
+                logging.error("Some vars are missing.")
+                sys.exit(1)
 
-        # Generating list of IP address as device attributes
-        ip_addresses = []
-        for int_name, int_dets in int_poll["results"].items():
-            if "iface_obj" in int_dets and "ip_address" in int_dets["iface_obj"] and "allentries" in int_dets["iface_obj"]["ip_address"]:
-                ip_addresses.extend([ip_a.split("/")[0] for ip_a in int_dets["iface_obj"]["ip_address"]["allentries"] if not re.match("^127\..+", ip_a) and ip_a != "::1/128"])
+            # Generating list of IP address as device attributes
+            ip_addresses = []
+            for int_name, int_dets in int_poll["results"].items():
+                if "iface_obj" in int_dets and "ip_address" in int_dets["iface_obj"] and "allentries" in int_dets["iface_obj"]["ip_address"]:
+                    ip_addresses.extend([ip_a.split("/")[0] for ip_a in int_dets["iface_obj"]["ip_address"]["allentries"] if not re.match("^127\..+", ip_a) and ip_a != "::1/128"])
 
-        # Putting device roles based on hostname
-        for de in inv:
-            if bgp_poll["hostname"] == de["name"]:
-                if de["device_role"]["slug"] in mapping["data_centre"]["leaf"]:
-                    level = 1
-                    plane = None
-                    role = "leaf"   
-                elif de["device_role"]["slug"] in mapping["data_centre"]["spine"]:
-                    level = 3
-                    plane = get_plane(bgp_poll["hostname"])
-                    role = "spine"
-                elif de["device_role"]["slug"] in mapping["data_centre"]["border"]:
-                    level = 5
-                    plane = None
-                    role = "border"
-                elif de["device_role"]["slug"] in mapping["data_centre"]["aggregate"]:
-                    level = 4
-                    plane = None
-                    role = "aggregate"
+            # Putting device roles based on hostname
+            for de in inv:
+                if bgp_poll["hostname"] == de["name"]:
+                    if de["device_role"]["slug"] in mapping["data_centre"]["leaf"]:
+                        level = 1
+                        plane = None
+                        role = "leaf"   
+                    elif de["device_role"]["slug"] in mapping["data_centre"]["spine"]:
+                        level = 3
+                        plane = get_plane(bgp_poll["hostname"])
+                        role = "spine"
+                    elif de["device_role"]["slug"] in mapping["data_centre"]["border"]:
+                        level = 5
+                        plane = None
+                        role = "border"
+                    elif de["device_role"]["slug"] in mapping["data_centre"]["aggregate"]:
+                        level = 4
+                        plane = None
+                        role = "aggregate"
 
-        # Adding nodes to graph
-        if "as" in bgp_poll["results"]:
-            G.add_node(bgp_poll["hostname"], label=bgp_poll["hostname"], bgp_asn=bgp_poll["results"]["as"], 
-                       title=f"{bgp_poll['hostname']}<br>ASN: {bgp_poll['results']['as']}<br>Plane: {plane}<br>Role: {role}", 
-                       level=level, plane = plane, role=role, ip_addresses=ip_addresses)
+            # Adding nodes to graph
+            if "as" in bgp_poll["results"]:
+                G.add_node(bgp_poll["hostname"], label=bgp_poll["hostname"], bgp_asn=bgp_poll["results"]["as"], 
+                        title=f"{bgp_poll['hostname']}<br>ASN: {bgp_poll['results']['as']}<br>Plane: {plane}<br>Role: {role}", 
+                        level=level, plane = plane, role=role, ip_addresses=ip_addresses)
 
     # Continuing building network graph 
     for dev in cd:
-        # Putting the default vars
-        bgp_poll = None
+        # Skipping elements, which don't have data
+        if dev:
+            # Putting the default vars
+            bgp_poll = None
 
-        # Picking the variables
-        for e in dev:
-            if re.match("^bgp-.*", e["collection"]):
-                bgp_poll = e 
+            # Picking the variables
+            for e in dev:
+                if re.match("^bgp-.*", e["collection"]):
+                    bgp_poll = e 
 
-        if not bgp_poll:
-            logging.error("Some vars 'bgp_poll' are missing.")
-            sys.exit(1)
+            if not bgp_poll:
+                logging.error("Some vars 'bgp_poll' are missing.")
+                sys.exit(1)
 
-        if bgp_poll["hostname"] in G.nodes:
-            if G.nodes[bgp_poll["hostname"]]["role"] == "spine":
+            if bgp_poll["hostname"] in G.nodes:
                 for peer_if, peer_detail in bgp_poll["results"]["peers"].items():
-                    if G.nodes[bgp_poll["hostname"]]["plane"] == 1:
-                        color = "blue"
-                    elif G.nodes[bgp_poll["hostname"]]["plane"] == 2:
-                        color = "green"
-                    elif G.nodes[bgp_poll["hostname"]]["plane"] == 3:
-                        color = "purple"
-                    elif G.nodes[bgp_poll["hostname"]]["plane"] == 4:
-                        color = "brown"
+                    if G.nodes[bgp_poll["hostname"]]["role"] == "spine":
+                        if G.nodes[bgp_poll["hostname"]]["plane"] == 1:
+                            color = "blue"
+                        elif G.nodes[bgp_poll["hostname"]]["plane"] == 2:
+                            color = "green"
+                        elif G.nodes[bgp_poll["hostname"]]["plane"] == 3:
+                            color = "purple"
+                        elif G.nodes[bgp_poll["hostname"]]["plane"] == 4:
+                            color = "brown"
+
+                    else:
+                        color = "black"
 
                     # Finding bgp sessions down
                     if peer_detail["state"] != "Established":
@@ -115,7 +122,7 @@ def analyze_bgp(cd: dict, inv: dict, mapping: dict, site: str):
                     if "hostname" in peer_detail:
                         # Working with interface peering
                         if re.match("^swp.+", peer_if):
-                            if bgp_poll["hostname"] in G.nodes and peer_detail["hostname"] in G.nodes:
+                            if bgp_poll["hostname"] in G.nodes and peer_detail["hostname"] in G.nodes and (G.nodes[bgp_poll["hostname"]]["role"] == "spine" or G.nodes[peer_detail["hostname"]]["role"] != "spine"):
                                 G.add_edge(bgp_poll["hostname"], peer_detail["hostname"], label=peer_detail["state"], color=color)
 
                                 # Adding broken links to a separate list
@@ -125,7 +132,7 @@ def analyze_bgp(cd: dict, inv: dict, mapping: dict, site: str):
                         # Working with IP address peering
                         else:
                             for peer in G.nodes.data():
-                                if peer_if in peer[1]["ip_addresses"]:
+                                if (G.nodes[bgp_poll["hostname"]]["role"] == "spine" or peer[1]["role"] != "spine") and peer_if in peer[1]["ip_addresses"] and peer_detail["hostname"] == peer[0]:
                                     G.add_edge(bgp_poll["hostname"], peer[0], label=peer_detail["state"], color=color)
 
                                     # Adding broken links to a separate list

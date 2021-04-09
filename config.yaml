@@ -3,7 +3,8 @@
 inventory:
   type: netbox
   parameters:
-    url: http://192.168.1.70:8000
+#    url: http://192.168.1.70:8000
+    url: https://netbox.hosting.thg.com
     token: 0123456789abcdef0123456789abcdef01234567
     site: nrn
 

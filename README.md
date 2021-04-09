@@ -44,6 +44,9 @@ Watch [requirements.txt](requirements.txt)
 [By using this product you accept the license agreement](LICENSE)
 
 ## Dev Log
+Release `0.3.4`:
+- Added capability to draw peerlink BGP sessions.
+
 Release `0.3.3`:
 - Minor modificaitions.
 
