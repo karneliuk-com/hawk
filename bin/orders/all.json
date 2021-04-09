@@ -1,0 +1,8 @@
+{
+    "cumulus-linux": {
+        "bgp-ipv4": "net show bgp ipv4 unicast summary json",
+        "bgp-ipv6": "net show bgp ipv6 unicast summary json",
+        "bgp-evpn": "net show bgp l2vpn evpn summary json",
+        "interfaces": "net show interface json"
+    }
+}
