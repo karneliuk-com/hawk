@@ -153,7 +153,8 @@ def draw_bgp(G, po: str, site: str):
     nt.show(f"{po}/bgp_topology_{site}.html")
 
 
-def bgp_failure_analysis(G, bll: list, po: str, pd: str, failed_nodes: int = 1, failed_node_types: set = {"spine", "aggregate"}, failed_node_names: set = {}):
+def bgp_failure_analysis(G, bll: list, po: str, pd: str, failed_nodes: int = 1, failed_node_types: set = {"spine", "aggregate"}, failed_node_names: set = {},
+                         checked_endpoints: set = {"leaf", "border"}, checked_node_names: set = {}):
     """
     High-function to trigger the node analyses from the BGP perspective
     """
@@ -175,8 +176,8 @@ def bgp_failure_analysis(G, bll: list, po: str, pd: str, failed_nodes: int = 1, 
 
     # Running analysis
     t1 = datetime.datetime.now()
-    connectivity_results = _node_failure_analysis(G1, levels=failed_nodes, failing_nodes=failed_node_types,
-                                                  specific_failed_nodes=failed_node_names)
+    connectivity_results = _node_failure_analysis(G1, levels=failed_nodes, failing_nodes=failed_node_types, endpoints=checked_endpoints,
+                                                  specific_failed_nodes=failed_node_names, specific_checked_nodes=checked_node_names)
     t2 = datetime.datetime.now()
 
     # Printing results
@@ -205,7 +206,8 @@ def bgp_failure_analysis(G, bll: list, po: str, pd: str, failed_nodes: int = 1, 
         f.write(template.render(site=G.graph['site'], elapsed_time=f"{t2 - t1}", results=connectivity_results, failed_nodes=failed_nodes, extra_info=extra_info))
 
 
-def _node_failure_analysis(G, levels: int = 1, failing_nodes: set = {"spine", "aggregate"}, specific_failed_nodes: set = {}, checked_node: str = "", upper_checked_nodes: list = []):
+def _node_failure_analysis(G, levels: int, failing_nodes: set, endpoints: set, specific_failed_nodes: set, specific_checked_nodes: set,
+                           checked_node: str = "", upper_checked_nodes: list = []):
     """
     Recursive function to analyse the impact of outage on the connectivity between the edges
     """
@@ -231,12 +233,12 @@ def _node_failure_analysis(G, levels: int = 1, failing_nodes: set = {"spine", "a
                     G.remove_edge(n1[0], lost_neighbor)
                 
                 # Running conectivity checks
-                test_results = _connectivity_check(G)
+                test_results = _connectivity_check(G, endpoints, specific_checked_nodes)
                 result = [{"failed_nodes": [n1[0]], "connectivity_check": False, "broken_paths": test_results["not-ok"]} if test_results["not-ok"] else {"failed_nodes": [n1[0]], "connectivity_check": True}]
 
                 # Running nested check (recursion)
                 if levels:
-                    nested_results = _node_failure_analysis(G, levels, failing_nodes, specific_failed_nodes, n1[0], checked_nodes)
+                    nested_results = _node_failure_analysis(G, levels, failing_nodes, endpoints, specific_failed_nodes, specific_checked_nodes, n1[0], checked_nodes)
 
                     upper_result = result[0]
 
@@ -261,29 +263,48 @@ def _node_failure_analysis(G, levels: int = 1, failing_nodes: set = {"spine", "a
     return results
 
 
-def _connectivity_check(G):
+def _connectivity_check(G, endpoints: set, specific_checked_nodes: set):
     """
     Functions performing the connectivity check between edge nodes within the graph
     """
     connectivity_matrix = {"ok": [], "not-ok": []}
     # Picking up first edge node
     for n1 in G.nodes.data():
-        if n1[1]["role"] == "leaf":
+        # Name-based analysis
+        if specific_checked_nodes and len(specific_checked_nodes) > 1:
+            if n1[0] in specific_checked_nodes:
+                # Picking up second node
+                for n2 in G.nodes.data():
+                    # Clearing path
+                    spf_check = None
 
-            # Picking up second node
-            for n2 in G.nodes.data():
-                # Clearing path
-                spf_check = None
+                    if n2[0] in specific_checked_nodes and n1[0] != n2[0] and ((n2[0], n1[0]) not in connectivity_matrix["not-ok"] or (n2[0], n1[0]) not in connectivity_matrix["ok"]):
+                        try:
+                            spf_check = networkx.shortest_path(G, source=n1[0], target=n2[0])
 
+                        except networkx.exception.NetworkXNoPath:
+                            spf_check = None
+                        
+                        # Checking path exists
+                        connectivity_matrix["ok"].append((n1[0], n2[0])) if spf_check else connectivity_matrix["not-ok"].append((n1[0], n2[0]))                        
 
-                if n2[1]["role"] in {"leaf", "border"} and n1[0] != n2[0] and (n2[0], n1[0]) not in connectivity_matrix["not-ok"]:
-                    try:
-                        spf_check = networkx.shortest_path(G, source=n1[0], target=n2[0])
+        # Role-based analysis
+        else:
+            if n1[1]["role"] in endpoints:
 
-                    except networkx.exception.NetworkXNoPath:
-                        spf_check = None
-                    
-                    # Checking path exists
-                    connectivity_matrix["ok"].append((n1[0], n2[0])) if spf_check else connectivity_matrix["not-ok"].append((n1[0], n2[0]))
+                # Picking up second node
+                for n2 in G.nodes.data():
+                    # Clearing path
+                    spf_check = None
+
+                    if n2[1]["role"] in endpoints and n1[0] != n2[0] and ((n2[0], n1[0]) not in connectivity_matrix["not-ok"] or (n2[0], n1[0]) not in connectivity_matrix["ok"]):
+                        try:
+                            spf_check = networkx.shortest_path(G, source=n1[0], target=n2[0])
+
+                        except networkx.exception.NetworkXNoPath:
+                            spf_check = None
+                        
+                        # Checking path exists
+                        connectivity_matrix["ok"].append((n1[0], n2[0])) if spf_check else connectivity_matrix["not-ok"].append((n1[0], n2[0]))
 
     return connectivity_matrix

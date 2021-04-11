@@ -44,6 +44,10 @@ Watch [requirements.txt](requirements.txt)
 [By using this product you accept the license agreement](LICENSE)
 
 ## Dev Log
+Release `0.3.5`:
+- Added capability to test connectivity between desired node types using key `-ct`.
+- Added capability to test connectivity between desired nodes using key `-cn`.
+
 Release `0.3.4`:
 - Added capability to draw peerlink BGP sessions.
 

@@ -102,6 +102,6 @@ if __name__ == '__main__':
         # Analyzing BGP node failures
         if re.match("^bgp-.*", args.topology):
             an.bgp_failure_analysis(network_graph, broken_links_list, config["output"]["parameters"]["path"], config["templates"]["parameters"]["path"], 
-                                    args.failed_nodes, args.failed_node_types, args.failed_node_names)
+                                    args.failed_nodes, args.failed_node_types, args.failed_node_names, args.checked_node_types, args.checked_node_names)
 
     logging.info('The execution is complete successfully')
