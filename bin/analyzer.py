@@ -278,7 +278,7 @@ def _connectivity_check(G, endpoints: set, specific_checked_nodes: set):
                     # Clearing path
                     spf_check = None
 
-                    if n2[0] in specific_checked_nodes and n1[0] != n2[0] and ((n2[0], n1[0]) not in connectivity_matrix["not-ok"] or (n2[0], n1[0]) not in connectivity_matrix["ok"]):
+                    if n2[0] in specific_checked_nodes and n1[0] != n2[0] and (n2[0], n1[0]) not in connectivity_matrix["not-ok"]:
                         try:
                             spf_check = networkx.shortest_path(G, source=n1[0], target=n2[0])
 
@@ -297,7 +297,7 @@ def _connectivity_check(G, endpoints: set, specific_checked_nodes: set):
                     # Clearing path
                     spf_check = None
 
-                    if n2[1]["role"] in endpoints and n1[0] != n2[0] and ((n2[0], n1[0]) not in connectivity_matrix["not-ok"] or (n2[0], n1[0]) not in connectivity_matrix["ok"]):
+                    if n2[1]["role"] in endpoints and n1[0] != n2[0] and (n2[0], n1[0]) not in connectivity_matrix["not-ok"]:
                         try:
                             spf_check = networkx.shortest_path(G, source=n1[0], target=n2[0])
 
