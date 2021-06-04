@@ -219,3 +219,13 @@ def initialization(file_path: str):
         logging.info("Initialization is successful with default variables.")
 
     return result
+
+def cumulus_neighbor_parser(raw_input: str):
+    result = []
+
+    for l in raw_input.splitlines():
+        tr = l.split(" ")
+        if tr[2] != "eth0":
+            result.append({"ip_address": tr[0], "mac": tr[4], "vlan": re.sub(r'vlan(\d+)', r'\1', tr[2])})
+
+    return result

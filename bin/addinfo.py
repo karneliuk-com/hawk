@@ -36,7 +36,7 @@ class Extender(object):
 
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.__ssh_timeout)) as self.__client_session:
             for role in roles_in_question:
-                tasks.append(asyncio.ensure_future(self.__single_request2(f"{self.__url}/api/dcim/devices/?site={site_slug}&role={role}")))
+                tasks.append(asyncio.ensure_future(self.__single_request2(f"{self.__url}/api/dcim/devices/?site={site_slug}&role={role}&status=active")))
 
             results = await asyncio.gather(*tasks)
             
@@ -56,7 +56,7 @@ class Extender(object):
             
             for dev in inventory:
                 for if_entry in results:
-                    if dev["id"] == if_entry["results"][0]["assigned_object"]["device"]["id"]:
+                    if if_entry["count"] and dev["id"] == if_entry["results"][0]["assigned_object"]["device"]["id"]:
                         dev["primary_ip"] = if_entry["results"][0]
 
         return inventory

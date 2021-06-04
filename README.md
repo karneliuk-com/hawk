@@ -44,6 +44,10 @@ Watch [requirements.txt](requirements.txt)
 [By using this product you accept the license agreement](LICENSE)
 
 ## Dev Log
+Release `0.3.6`:
+- Added functionality to quantify amount of collected IP hosts to the node.
+- Minor bug fixing.
+
 Release `0.3.5`:
 - Added capability to test connectivity between desired node types using key `-ct`.
 - Added capability to test connectivity between desired nodes using key `-cn`.

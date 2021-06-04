@@ -40,12 +40,19 @@ mapping:
   data_centre:
     leaf: 
       - leaf
+      - combined-leaf
+      - private-leaf
+      - public-leaf
     spine:
       - spine
     border:
       - border
+      - combined-exit
+      - private-exit
+      - public-exit
     aggregate:
       - aggregate
+      - super-spine
     dci:
       - dci-gw
   service_provider:
@@ -57,5 +64,5 @@ commands:
 
 # SSH parameters
 ssh:
-  timeout: 20
+  timeout: 30
 ...

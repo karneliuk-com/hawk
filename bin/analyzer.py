@@ -77,11 +77,21 @@ def analyze_bgp(cd: dict, inv: dict, mapping: dict, site: str):
                         plane = None
                         role = "aggregate"
 
+            # Looking for connected endpoints
+            connected_endpoints = None
+
+            for sd in dev:
+                if sd["collection"] == "neighbors":
+                    connected_endpoints = sd["results"]
+
             # Adding nodes to graph
             if "as" in bgp_poll["results"]:
-                G.add_node(bgp_poll["hostname"], label=bgp_poll["hostname"], bgp_asn=bgp_poll["results"]["as"], 
-                        title=f"{bgp_poll['hostname']}<br>ASN: {bgp_poll['results']['as']}<br>Plane: {plane}<br>Role: {role}", 
-                        level=level, plane = plane, role=role, ip_addresses=ip_addresses)
+                G.add_node(
+                            bgp_poll["hostname"], label=bgp_poll["hostname"], bgp_asn=bgp_poll["results"]["as"], 
+                            title=f"{bgp_poll['hostname']}<br>ASN: {bgp_poll['results']['as']}<br>RID: {bgp_poll['results']['routerId']}<br>Plane: {plane}<br>Role: {role}<br> connected hosts: {len(connected_endpoints)}", 
+                            level=level, plane = plane, role=role, ip_addresses=ip_addresses, rid=bgp_poll['results']['routerId'],
+                            connected_endpoints=connected_endpoints
+                          )
 
     # Continuing building network graph 
     for dev in cd:
@@ -146,7 +156,7 @@ def draw_bgp(G, po: str, site: str):
     """
     Visualising the BGP topology
     """
-    nt = Network(height="600px", width="1200px", heading=f"{G.graph['label']}, (c)2021, Karneliuk.com", layout=True)
+    nt = Network(height="600px", width="100%", bgcolor="#222222", font_color="white", heading=f"{G.graph['label']}, (c)2021, Karneliuk.com", layout=True)
     nt.from_nx(G)
     nt.toggle_physics(False)
 
@@ -256,7 +266,7 @@ def _node_failure_analysis(G, levels: int, failing_nodes: set, endpoints: set, s
     # Analyzing the exiting topology
     else:
         # Running conectivity checks
-        test_results = _connectivity_check(G)
+        test_results = _connectivity_check(G, endpoints, specific_checked_nodes)
         result = [{"failed_nodes": [], "connectivity_check": False, "broken_paths": test_results["not-ok"]} if test_results["not-ok"] else {"failed_nodes": [], "connectivity_check": True}] 
         results.extend(result)
 

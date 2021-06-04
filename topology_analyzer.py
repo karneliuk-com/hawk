@@ -20,7 +20,6 @@ import bin.analyzer as an
 
 # Variables
 path_log = './log/execution.log'
-path_netbox = 'https://netbox.hosting.thg.com'
 
 
 # Body
