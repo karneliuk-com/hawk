@@ -13,9 +13,9 @@ import re
 # Own modules
 from bin.helpers import get_creds, get_args, initialization, get_data
 from bin.collector import AsnycPoller
-from bin.structurer import Structurer
 from bin.addinfo import Extender
 import bin.analyzer as an
+import bin.structurer as st
 
 
 # Variables
@@ -30,6 +30,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(filename=path_log, level=logging.INFO, format='%(asctime)s.%(msecs)03d+01:00,%(levelname)s,%(message)s', datefmt='%Y-%m-%dT%H:%M:%S')
     logging.info('Starting application...')
+    t1 = datetime.datetime.now()
 
     # Collecting args
     args = get_args()
@@ -103,4 +104,9 @@ if __name__ == '__main__':
             an.bgp_failure_analysis(network_graph, broken_links_list, config["output"]["parameters"]["path"], config["templates"]["parameters"]["path"], 
                                     args.failed_nodes, args.failed_node_types, args.failed_node_names, args.checked_node_types, args.checked_node_names)
 
-    logging.info('The execution is complete successfully')
+    # Providing details about connected hosts
+    if "show-hosts" in args.operation:
+        # Building joint table of all connected hosts
+            st.provide_connected_hosts(collected_data, config["output"]["parameters"]["path"], args.datacentre)
+
+    logging.info(f'The execution is complete successfully in {datetime.datetime.now() - t1}')

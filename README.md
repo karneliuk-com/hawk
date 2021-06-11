@@ -44,6 +44,10 @@ Watch [requirements.txt](requirements.txt)
 [By using this product you accept the license agreement](LICENSE)
 
 ## Dev Log
+Release `0.4.0`:
+- Added new operation to `-o show-hosts`, which collects IPv4/IPv6 addresses, MACs, port description, etc .
+- Minor bug fixing.
+
 Release `0.3.6`:
 - Added functionality to quantify amount of collected IP hosts to the node.
 - Minor bug fixing.

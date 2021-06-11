@@ -24,6 +24,7 @@ class AsnycPoller(object):
         Input: inventory(dict) and credentials(dict)
         """
         logging.info(f'Collecting info from {len(self.__targets)} devices over SSH...')
+        default_commands = {"interfaces", "neighbors", "macs"}
         tasks = []
 
         # Chossing instructions based on clarification
@@ -32,7 +33,7 @@ class AsnycPoller(object):
         for inv_entry in self.__targets:
             if (inv_entry["platform"] and "slug" in inv_entry["platform"]) and inv_entry["platform"]["slug"] not in cleared_commands:
                 cleared_commands[inv_entry["platform"]["slug"]] = []
-                cleared_commands[inv_entry["platform"]["slug"]] = [(ck, cv) for ck, cv in commands[inv_entry["platform"]["slug"]].items() if ck in {clarification, "interfaces", "neighbors"}]
+                cleared_commands[inv_entry["platform"]["slug"]] = [(ck, cv) for ck, cv in commands[inv_entry["platform"]["slug"]].items() if ck in {clarification, *default_commands}]
 
             if (inv_entry["platform"] and "slug" in inv_entry["platform"]) and inv_entry["platform"]["slug"] in cleared_commands:
                 tasks.append(self.__singleShot(inv_entry, cleared_commands[inv_entry["platform"]["slug"]]))

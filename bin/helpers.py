@@ -103,7 +103,7 @@ def get_data(file_path: str):
 
 def get_args():
     # Default ranges
-    allowed_operations = {"draw", "analyze"}
+    allowed_operations = {"draw", "analyze", "show-hosts"}
     allowed_topology = {"bgp-ipv4", "bgp-ipv6", "bgp-evpn", "lldp", "bfd"}
     allowed_node_types = {"leaf", "spine", "border", "aggregate"}
 
