@@ -44,8 +44,11 @@ Watch [requirements.txt](requirements.txt)
 [By using this product you accept the license agreement](LICENSE)
 
 ## Dev Log
+Release `0.4.1`:
+- Rebuild `show-hosts` to work with dictionary first rather that writing to file.
+
 Release `0.4.0`:
-- Added new operation to `-o show-hosts`, which collects IPv4/IPv6 addresses, MACs, port description, etc .
+- Added new operation to `-o show-hosts`, which collects IPv4/IPv6 addresses, MACs, port description, etc.
 - Minor bug fixing.
 
 Release `0.3.6`:

@@ -107,6 +107,7 @@ if __name__ == '__main__':
     # Providing details about connected hosts
     if "show-hosts" in args.operation:
         # Building joint table of all connected hosts
-            st.provide_connected_hosts(collected_data, config["output"]["parameters"]["path"], args.datacentre)
+        tch = st.provide_connected_hosts(collected_data)
+        st.connected_hosts_csv(tch, config["output"]["parameters"]["path"], args.datacentre)
 
     logging.info(f'The execution is complete successfully in {datetime.datetime.now() - t1}')
