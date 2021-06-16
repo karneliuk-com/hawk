@@ -23,7 +23,7 @@ The tools is constantly developing, so the changes may be frequent. At the curre
 
 ## Credentials
 You can use one of 3 approaches:
-- Provide variables in environment (`HAWK_USER` for username at network functions, `HAWK_PASS` for password for network functions, `NB_TOKEN` for NetBox access).
+- Provide variables in environment (`HAWK_USER` for username at network functions, `HAWK_PASS` for password for network functions, `NB_TOKEN` for NetBox API access, `NB_URL` for NetBox URL).
 - Provide credentials for NetBox in `config.yaml` and username/password in local inventory file.
 - Provide all the credentials via cli.
 
@@ -44,6 +44,10 @@ Watch [requirements.txt](requirements.txt)
 [By using this product you accept the license agreement](LICENSE)
 
 ## Dev Log
+Release `0.4.2`:
+- Added environment variable `NB_URL` to provide the NetBox url.
+- Minor bug fixing.
+
 Release `0.4.1`:
 - Rebuild `show-hosts` to work with dictionary first rather that writing to file.
 

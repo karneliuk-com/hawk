@@ -202,6 +202,7 @@ def bgp_failure_analysis(G, bll: list, po: str, pd: str, failed_nodes: int = 1, 
         else:
             print(f"Connectivity check:                  " + Fore.RED + "FAIL" + Fore.RESET + "\n" + "-" * tl[0])
 
+    print("Checked combinations:                " + Fore.CYAN + f"{len(connectivity_results)}" + Fore.RESET)
     print("Elapsed time:                        " + Fore.CYAN + f"{t2 - t1}" + Fore.RESET + "\n" + "-" * tl[0])
     print("=" * tl[0])
     print(Style.RESET_ALL)

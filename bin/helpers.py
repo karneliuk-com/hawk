@@ -173,6 +173,14 @@ def initialization(file_path: str):
         result = get_data(file_path)
         logging.info(f"Initialization is successful from the configuration file '{file_path}'.")
 
+        if result["inventory"]["type"] == "netbox":
+                    env_vars = os.environ
+
+                    if "NB_URL" in env_vars and env_vars["NB_URL"]:
+                        result["inventory"]["parameters"]["url"] = env_vars["NB_URL"]
+
+        logging.info(f"The NetBox URL is modifed per environment variables.")
+
     except FileNotFoundError:
         logging.info("Configuration file is not found, using the default parameters.")
 
